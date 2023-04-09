@@ -1,5 +1,7 @@
 package messages
 
+import "encoding/json"
+
 type Action uint32
 
 const (
@@ -13,10 +15,10 @@ type Message struct {
 	Payload []int64
 }
 
-func (m Message) Pack() ([]byte, error) {
-	return nil, nil
+func (m *Message) Pack() ([]byte, error) {
+	return json.Marshal(m)
 }
 
 func (m *Message) Unpack(b []byte) error {
-	return nil
+	return json.Unmarshal(b, m)
 }
