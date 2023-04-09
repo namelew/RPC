@@ -89,8 +89,6 @@ func Listen() {
 					log.Println(err.Error())
 					return
 				}
-			case messages.RESPONSE:
-				log.Println(m.Payload[0])
 			default:
 				log.Println("unknown procedure resquested")
 			}
@@ -115,5 +113,17 @@ func ResquestProcess(adress string, m messages.Message) {
 
 	c.Write(b)
 
-	// criar uma thread separada para esperar a resposta
+	n, err := bufio.NewReader(c).Read(b)
+
+	if err != nil {
+		log.Println(err.Error())
+		return
+	}
+
+	if err := m.Unpack(b[:n]); err != nil {
+		log.Println(err.Error())
+		return
+	}
+
+	log.Println(m)
 }
