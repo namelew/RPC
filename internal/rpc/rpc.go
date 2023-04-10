@@ -47,41 +47,42 @@ func Listen() {
 		}
 
 		go func(c net.Conn) {
-			var m messages.Message
+			var request, response messages.Message
 			b := make([]byte, 1024)
 
 			n, err := bufio.NewReader(c).Read(b)
-			defer c.Close()
+
+			defer func() {
+				send(c, &response)
+				c.Close()
+			}()
 
 			if err != nil {
 				log.Println(err.Error())
 				return
 			}
 
-			if err := m.Unpack(b[:n]); err != nil {
+			if err := request.Unpack(b[:n]); err != nil {
 				log.Println(err.Error())
 				return
 			}
 
-			var response messages.Message
-
-			switch m.Action {
+			switch request.Action {
 			case messages.ADD:
-				a := procedures.Add(m.Payload...)
+				a := procedures.Add(request.Payload...)
 
 				response = messages.Message{
 					Action:  messages.RESPONSE,
 					Payload: []int64{a},
 				}
 			case messages.SUB:
-				a := procedures.Sub(m.Payload...)
+				a := procedures.Sub(request.Payload...)
 
 				response = messages.Message{
 					Action:  messages.RESPONSE,
 					Payload: []int64{a},
 				}
 			}
-			send(c, &response)
 		}(conn)
 	}
 }
