@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/joho/godotenv"
 	"github.com/namelew/RPC/internal/rpc"
 	"github.com/namelew/RPC/packages/messages"
 )
@@ -23,6 +24,7 @@ func sanitaze(s string) string {
 }
 
 func main() {
+	godotenv.Load()
 	go rpc.Listen()
 
 	r := bufio.NewReader(os.Stdin)

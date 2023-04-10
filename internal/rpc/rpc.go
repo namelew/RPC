@@ -4,18 +4,19 @@ import (
 	"bufio"
 	"log"
 	"net"
+	"os"
+	"time"
 
 	"github.com/namelew/RPC/internal/procedures"
 	"github.com/namelew/RPC/packages/messages"
 )
 
 const (
-	ADRESS string = "localhost"
-	PORT   string = "30001"
+	TIMEOUT time.Duration = time.Second
 )
 
 func Listen() {
-	l, err := net.Listen("tcp", ADRESS+":"+PORT)
+	l, err := net.Listen("tcp", os.Getenv("ADRESS")+":"+os.Getenv("PORT"))
 
 	if err != nil {
 		log.Panic(err.Error())
@@ -113,6 +114,8 @@ func ResquestProcess(adress string, m messages.Message) {
 
 	c.Write(b)
 
+	<-time.After(TIMEOUT)
+
 	n, err := bufio.NewReader(c).Read(b)
 
 	if err != nil {
@@ -122,6 +125,11 @@ func ResquestProcess(adress string, m messages.Message) {
 
 	if err := m.Unpack(b[:n]); err != nil {
 		log.Println(err.Error())
+		return
+	}
+
+	if m.Action != messages.RESPONSE {
+		log.Println("Resqueted procedure failed")
 		return
 	}
 
