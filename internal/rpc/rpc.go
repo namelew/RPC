@@ -22,6 +22,22 @@ func Listen() {
 		log.Panic(err.Error())
 	}
 
+	send := func(c net.Conn, m *messages.Message) {
+		respb, err := m.Pack()
+
+		if err != nil {
+			log.Println(err.Error())
+			return
+		}
+
+		_, err = c.Write(respb)
+
+		if err != nil {
+			log.Println(err.Error())
+			return
+		}
+	}
+
 	for {
 		conn, err := l.Accept()
 
@@ -47,52 +63,25 @@ func Listen() {
 				return
 			}
 
+			var response messages.Message
+
 			switch m.Action {
 			case messages.ADD:
 				a := procedures.Add(m.Payload...)
 
-				response := messages.Message{
+				response = messages.Message{
 					Action:  messages.RESPONSE,
 					Payload: []int64{a},
-				}
-
-				respb, err := response.Pack()
-
-				if err != nil {
-					log.Println(err.Error())
-					return
-				}
-
-				_, err = c.Write(respb)
-
-				if err != nil {
-					log.Println(err.Error())
-					return
 				}
 			case messages.SUB:
 				a := procedures.Sub(m.Payload...)
 
-				response := messages.Message{
+				response = messages.Message{
 					Action:  messages.RESPONSE,
 					Payload: []int64{a},
 				}
-
-				respb, err := response.Pack()
-
-				if err != nil {
-					log.Println(err.Error())
-					return
-				}
-
-				_, err = c.Write(respb)
-
-				if err != nil {
-					log.Println(err.Error())
-					return
-				}
-			default:
-				log.Println("unknown procedure resquested")
 			}
+			send(c, &response)
 		}(conn)
 	}
 }

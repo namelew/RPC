@@ -5,9 +5,10 @@ import "encoding/json"
 type Action uint32
 
 const (
-	RESPONSE Action = 0
+	ERROR    Action = 0
 	ADD      Action = 1
 	SUB      Action = 2
+	RESPONSE Action = 3
 )
 
 type Message struct {
