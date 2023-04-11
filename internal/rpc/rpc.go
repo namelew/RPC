@@ -2,6 +2,7 @@ package rpc
 
 import (
 	"bufio"
+	"context"
 	"log"
 	"net"
 	"os"
@@ -13,6 +14,7 @@ import (
 
 const (
 	TIMEOUT time.Duration = time.Second
+	TRIES   uint8         = 10
 )
 
 func Listen() {
@@ -88,6 +90,7 @@ func Listen() {
 }
 
 func ResquestProcess(adress string, m messages.Message) {
+	var response messages.Message
 	c, err := net.Dial("tcp", adress)
 
 	if err != nil {
@@ -102,26 +105,42 @@ func ResquestProcess(adress string, m messages.Message) {
 		return
 	}
 
+	timer, cancel := context.WithTimeout(context.Background(), TIMEOUT)
+
 	c.Write(b)
 
-	<-time.After(TIMEOUT)
+	go func() {
+		for i := 0; i < int(TRIES); i++ {
+			n, err := bufio.NewReader(c).Read(b)
+			if err != nil {
+				log.Println(err.Error())
+				time.Sleep(TIMEOUT / time.Duration(TRIES))
+				continue
+			}
 
-	n, err := bufio.NewReader(c).Read(b)
+			if err := response.Unpack(b[:n]); err != nil {
+				log.Println(err.Error())
+				time.Sleep(TIMEOUT / time.Duration(TRIES))
+				continue
+			}
 
-	if err != nil {
-		log.Println(err.Error())
-		return
-	}
+			if response.Action == m.Action {
+				c.Write(b)
+				time.Sleep(TIMEOUT / time.Duration(TRIES))
+				continue
+			}
 
-	if err := m.Unpack(b[:n]); err != nil {
-		log.Println(err.Error())
-		return
-	}
+			cancel()
+			return
+		}
+	}()
 
-	if m.Action != messages.RESPONSE {
+	<-timer.Done()
+
+	if response.Action != messages.RESPONSE {
 		log.Println("Resqueted procedure failed")
 		return
 	}
 
-	log.Println(m)
+	log.Println(response)
 }
