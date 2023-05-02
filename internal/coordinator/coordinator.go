@@ -10,14 +10,13 @@ import (
 	"github.com/namelew/RPC/packages/messages"
 )
 
-var lookback string = os.Getenv("COORDADRESS")
 var queue []messages.Message
 var locked bool = false
 var queueMutex sync.Mutex
 var lockedMutex sync.Mutex
 
 func Listen() {
-	l, err := net.Listen("tcp", lookback)
+	l, err := net.Listen("tcp", os.Getenv("COORDADRESS"))
 
 	if err != nil {
 		log.Panic(err.Error())
