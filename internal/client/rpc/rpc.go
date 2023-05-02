@@ -3,6 +3,7 @@ package rpc
 import (
 	"bufio"
 	"context"
+	"fmt"
 	"log"
 	"net"
 	"os"
@@ -17,8 +18,12 @@ const (
 	TRIES   uint8         = 10
 )
 
+var coordinator string = os.Getenv("COORDADRESS")
+var lookback string = os.Getenv("ADRESS") + ":" + os.Getenv("PORT")
+var queue []messages.Message
+
 func Listen() {
-	l, err := net.Listen("tcp", os.Getenv("ADRESS")+":"+os.Getenv("PORT"))
+	l, err := net.Listen("tcp", lookback)
 
 	if err != nil {
 		log.Panic(err.Error())
@@ -102,6 +107,8 @@ func Listen() {
 					Action:  messages.RESPONSE,
 					Payload: map[string]interface{}{"Result": a},
 				}
+
+				go registerProcedure(c.RemoteAddr().String(), messages.RESPONSE)
 			case messages.SUB:
 				temp, ok := request.Payload["Params"].([]interface{})
 
@@ -134,6 +141,14 @@ func Listen() {
 					Action:  messages.RESPONSE,
 					Payload: map[string]interface{}{"Result": a},
 				}
+				go registerProcedure(c.RemoteAddr().String(), messages.RESPONSE)
+			case messages.GRANTED:
+				response = queue[0]
+				if len(queue) > 1 {
+					queue = queue[1:]
+				} else {
+					queue = nil
+				}
 			}
 		}(conn)
 	}
@@ -156,6 +171,8 @@ func ResquestProcess(adress string, m messages.Message) {
 	}
 
 	timer, cancel := context.WithTimeout(context.Background(), TIMEOUT)
+
+	go registerProcedure(adress, m.Action)
 
 	c.Write(b)
 
@@ -194,4 +211,70 @@ func ResquestProcess(adress string, m messages.Message) {
 	}
 
 	log.Println(response)
+}
+
+func registerProcedure(server string, a messages.Action) {
+	var response messages.Message
+
+	m := messages.Message{
+		Action: messages.LOCK,
+		Payload: map[string]interface{}{
+			"Log": fmt.Sprintf("%s: %d - %s", lookback, a, server),
+		},
+	}
+
+	c, err := net.Dial("tcp", coordinator)
+
+	if err != nil {
+		log.Println(err.Error())
+		return
+	}
+
+	defer c.Close()
+
+	b, err := m.Pack()
+
+	if err != nil {
+		log.Println(err.Error())
+		return
+	}
+
+	timer, cancel := context.WithTimeout(context.Background(), TIMEOUT)
+
+	c.Write(b)
+
+	go func() {
+		for i := 0; i < int(TRIES); i++ {
+			n, err := bufio.NewReader(c).Read(b)
+			if err != nil {
+				log.Println(err.Error())
+				time.Sleep(TIMEOUT / time.Duration(TRIES))
+				continue
+			}
+
+			if err := response.Unpack(b[:n]); err != nil {
+				log.Println(err.Error())
+				time.Sleep(TIMEOUT / time.Duration(TRIES))
+				continue
+			}
+
+			if response.Action == m.Action {
+				c.Write(b)
+				time.Sleep(TIMEOUT / time.Duration(TRIES))
+				continue
+			}
+			cancel()
+			return
+		}
+	}()
+
+	<-timer.Done()
+
+	if response.Action != messages.GRANTED {
+		if response.Action == messages.INUSE {
+			queue = append(queue, m)
+		}
+
+		log.Println("Unable to write event log")
+	}
 }
