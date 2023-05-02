@@ -9,6 +9,8 @@ const (
 	ADD      Action = 1
 	SUB      Action = 2
 	RESPONSE Action = 3
+	LOCK     Action = 4
+	UNLOCK   Action = 5
 )
 
 type Message struct {
