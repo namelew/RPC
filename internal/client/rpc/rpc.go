@@ -18,11 +18,8 @@ const (
 	TRIES   uint8         = 10
 )
 
-var coordinator string = os.Getenv("COORDADRESS")
-var lookback string = os.Getenv("ADRESS") + ":" + os.Getenv("PORT")
-
 func Listen() {
-	l, err := net.Listen("tcp", lookback)
+	l, err := net.Listen("tcp", os.Getenv("ADRESS")+":"+os.Getenv("PORT"))
 
 	if err != nil {
 		log.Panic(err.Error())
@@ -93,7 +90,7 @@ func Listen() {
 								Action:  messages.ERROR,
 								Payload: nil,
 							}
-							return
+							continue
 						}
 
 						params = append(params, n)
@@ -104,7 +101,6 @@ func Listen() {
 						Action:  messages.RESPONSE,
 						Payload: map[string]interface{}{"Result": a},
 					}
-					log.Println(c.RemoteAddr().String())
 					go registerProcedure(c.RemoteAddr().String(), messages.RESPONSE)
 				}
 			case messages.SUB:
@@ -115,7 +111,6 @@ func Listen() {
 						Action:  messages.ERROR,
 						Payload: nil,
 					}
-					return
 				} else {
 					var params []float64
 
@@ -127,6 +122,7 @@ func Listen() {
 								Action:  messages.ERROR,
 								Payload: nil,
 							}
+							continue
 						}
 
 						params = append(params, n)
@@ -209,11 +205,11 @@ func registerProcedure(server string, a messages.Action) {
 	m := messages.Message{
 		Action: messages.LOCK,
 		Payload: map[string]interface{}{
-			"Log": fmt.Sprintf("%s: %d - %s", lookback, a, server),
+			"Log": fmt.Sprintf("%s: %d - %s", os.Getenv("ADRESS")+":"+os.Getenv("PORT"), a, server),
 		},
 	}
 
-	c, err := net.Dial("tcp", coordinator)
+	c, err := net.Dial("tcp", os.Getenv("COORDADRESS"))
 
 	if err != nil {
 		log.Println("Register Process. ", err.Error())
