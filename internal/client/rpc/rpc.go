@@ -82,32 +82,31 @@ func Listen() {
 						Action:  messages.ERROR,
 						Payload: nil,
 					}
-					return
-				}
+				} else {
+					var params []float64
 
-				var params []float64
+					for i := range temp {
+						n, ok := temp[i].(float64)
 
-				for i := range temp {
-					n, ok := temp[i].(float64)
-
-					if !ok {
-						response = messages.Message{
-							Action:  messages.ERROR,
-							Payload: nil,
+						if !ok {
+							response = messages.Message{
+								Action:  messages.ERROR,
+								Payload: nil,
+							}
+							return
 						}
-						return
+
+						params = append(params, n)
 					}
+					a := procedures.Add(params...)
 
-					params = append(params, n)
+					response = messages.Message{
+						Action:  messages.RESPONSE,
+						Payload: map[string]interface{}{"Result": a},
+					}
+					log.Println(c.RemoteAddr().String())
+					go registerProcedure(c.RemoteAddr().String(), messages.RESPONSE)
 				}
-				a := procedures.Add(params...)
-
-				response = messages.Message{
-					Action:  messages.RESPONSE,
-					Payload: map[string]interface{}{"Result": a},
-				}
-
-				go registerProcedure(c.RemoteAddr().String(), messages.RESPONSE)
 			case messages.SUB:
 				temp, ok := request.Payload["Params"].([]interface{})
 
@@ -117,30 +116,29 @@ func Listen() {
 						Payload: nil,
 					}
 					return
-				}
+				} else {
+					var params []float64
 
-				var params []float64
+					for i := range temp {
+						n, ok := temp[i].(float64)
 
-				for i := range temp {
-					n, ok := temp[i].(float64)
-
-					if !ok {
-						response = messages.Message{
-							Action:  messages.ERROR,
-							Payload: nil,
+						if !ok {
+							response = messages.Message{
+								Action:  messages.ERROR,
+								Payload: nil,
+							}
 						}
-						return
+
+						params = append(params, n)
 					}
+					a := procedures.Sub(params...)
 
-					params = append(params, n)
+					response = messages.Message{
+						Action:  messages.RESPONSE,
+						Payload: map[string]interface{}{"Result": a},
+					}
+					go registerProcedure(c.RemoteAddr().String(), messages.RESPONSE)
 				}
-				a := procedures.Sub(params...)
-
-				response = messages.Message{
-					Action:  messages.RESPONSE,
-					Payload: map[string]interface{}{"Result": a},
-				}
-				go registerProcedure(c.RemoteAddr().String(), messages.RESPONSE)
 			}
 		}(conn)
 	}
@@ -151,7 +149,7 @@ func ResquestProcess(adress string, m messages.Message) {
 	c, err := net.Dial("tcp", adress)
 
 	if err != nil {
-		log.Println(err.Error())
+		log.Println("Request Process. ", err.Error())
 		return
 	}
 
@@ -218,6 +216,7 @@ func registerProcedure(server string, a messages.Action) {
 	c, err := net.Dial("tcp", coordinator)
 
 	if err != nil {
+		log.Println("Register Process. ", err.Error())
 		log.Println(err.Error())
 		return
 	}
