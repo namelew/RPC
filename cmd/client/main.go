@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/joho/godotenv"
-	"github.com/namelew/RPC/internal/rpc"
+	"github.com/namelew/RPC/internal/client/rpc"
 	"github.com/namelew/RPC/packages/messages"
 )
 

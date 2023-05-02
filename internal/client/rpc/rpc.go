@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/namelew/RPC/internal/procedures"
+	"github.com/namelew/RPC/internal/client/procedures"
 	"github.com/namelew/RPC/packages/messages"
 )
 
