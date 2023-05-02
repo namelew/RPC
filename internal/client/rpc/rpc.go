@@ -96,7 +96,7 @@ func Listen() {
 
 					params = append(params, n)
 				}
-				a := procedures.Add[float64](params...)
+				a := procedures.Add(params...)
 
 				response = messages.Message{
 					Action:  messages.RESPONSE,
@@ -128,7 +128,7 @@ func Listen() {
 
 					params = append(params, n)
 				}
-				a := procedures.Sub[float64](params...)
+				a := procedures.Sub(params...)
 
 				response = messages.Message{
 					Action:  messages.RESPONSE,
