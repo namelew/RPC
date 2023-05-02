@@ -2,7 +2,7 @@ package messages
 
 import "encoding/json"
 
-type Action uint32
+type Action uint8
 
 const (
 	ERROR    Action = 0
