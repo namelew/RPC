@@ -10,9 +10,8 @@ const (
 	SUB      Action = 2
 	RESPONSE Action = 3
 	LOCK     Action = 4
-	UNLOCK   Action = 5
-	INUSE    Action = 6
-	GRANTED  Action = 7
+	INUSE    Action = 5
+	GRANTED  Action = 6
 )
 
 type Message struct {

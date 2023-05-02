@@ -20,7 +20,6 @@ const (
 
 var coordinator string = os.Getenv("COORDADRESS")
 var lookback string = os.Getenv("ADRESS") + ":" + os.Getenv("PORT")
-var queue []messages.Message
 
 func Listen() {
 	l, err := net.Listen("tcp", lookback)
@@ -142,13 +141,6 @@ func Listen() {
 					Payload: map[string]interface{}{"Result": a},
 				}
 				go registerProcedure(c.RemoteAddr().String(), messages.RESPONSE)
-			case messages.GRANTED:
-				response = queue[0]
-				if len(queue) > 1 {
-					queue = queue[1:]
-				} else {
-					queue = nil
-				}
 			}
 		}(conn)
 	}
@@ -270,11 +262,7 @@ func registerProcedure(server string, a messages.Action) {
 
 	<-timer.Done()
 
-	if response.Action != messages.GRANTED {
-		if response.Action == messages.INUSE {
-			queue = append(queue, m)
-		}
-
+	if response.Action != messages.GRANTED && response.Action != messages.INUSE {
 		log.Println("Unable to write event log")
 	}
 }
