@@ -71,18 +71,68 @@ func Listen() {
 
 			switch request.Action {
 			case messages.ADD:
-				a := procedures.Add(request.Payload...)
+				temp, ok := request.Payload["Params"].([]interface{})
+
+				if !ok {
+					response = messages.Message{
+						Action:  messages.ERROR,
+						Payload: nil,
+					}
+					return
+				}
+
+				var params []float64
+
+				for i := range temp {
+					n, ok := temp[i].(float64)
+
+					if !ok {
+						response = messages.Message{
+							Action:  messages.ERROR,
+							Payload: nil,
+						}
+						return
+					}
+
+					params = append(params, n)
+				}
+				a := procedures.Add[float64](params...)
 
 				response = messages.Message{
 					Action:  messages.RESPONSE,
-					Payload: []int64{a},
+					Payload: map[string]interface{}{"Result": a},
 				}
 			case messages.SUB:
-				a := procedures.Sub(request.Payload...)
+				temp, ok := request.Payload["Params"].([]interface{})
+
+				if !ok {
+					response = messages.Message{
+						Action:  messages.ERROR,
+						Payload: nil,
+					}
+					return
+				}
+
+				var params []float64
+
+				for i := range temp {
+					n, ok := temp[i].(float64)
+
+					if !ok {
+						response = messages.Message{
+							Action:  messages.ERROR,
+							Payload: nil,
+						}
+						return
+					}
+
+					params = append(params, n)
+				}
+				a := procedures.Sub[float64](params...)
 
 				response = messages.Message{
 					Action:  messages.RESPONSE,
-					Payload: []int64{a},
+					Payload: map[string]interface{}{"Result": a},
 				}
 			}
 		}(conn)
@@ -111,6 +161,7 @@ func ResquestProcess(adress string, m messages.Message) {
 
 	go func() {
 		for i := 0; i < int(TRIES); i++ {
+			time.Sleep(TIMEOUT / time.Duration(TRIES))
 			n, err := bufio.NewReader(c).Read(b)
 			if err != nil {
 				log.Println(err.Error())

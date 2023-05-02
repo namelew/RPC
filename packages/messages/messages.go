@@ -15,7 +15,7 @@ const (
 
 type Message struct {
 	Action  Action
-	Payload []int64
+	Payload map[string]interface{}
 }
 
 func (m *Message) Pack() ([]byte, error) {

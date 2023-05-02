@@ -55,17 +55,20 @@ func main() {
 
 		m.Action = messages.Action(a)
 
+		params := []float64{}
+
 		for _, num := range strings.Split(input[2], ",") {
-			a, err := strconv.Atoi(sanitaze(num))
+			a, err := strconv.ParseFloat(sanitaze(num), 64)
 
 			if err != nil {
 				log.Println(err.Error())
 				continue
 			}
 
-			m.Payload = append(m.Payload, int64(a))
+			params = append(params, a)
 		}
 
+		m.Payload = map[string]interface{}{"Params": params}
 		rpc.ResquestProcess(input[0], m)
 	}
 }
