@@ -15,6 +15,50 @@ var locked bool = false
 var queueMutex sync.Mutex
 var lockedMutex sync.Mutex
 
+type CircularQueue struct {
+    queue []*messages.Message
+    head  int
+    tail  int
+    size  int
+    lock  sync.Mutex
+}
+
+func (q *CircularQueue) Enqueue(value *messages.Message) {
+    q.lock.Lock()
+    defer q.lock.Unlock()
+
+    if q.IsFull() {
+        return
+    }
+
+    q.queue[q.tail] = value
+    q.tail = (q.tail + 1) % len(q.queue)
+    q.size++
+}
+
+func (q *CircularQueue) Dequeue() *messages.Message {
+    q.lock.Lock()
+    defer q.lock.Unlock()
+
+    if q.IsEmpty() {
+        return nil
+    }
+
+    value := q.queue[q.head]
+    q.head = (q.head + 1) % len(q.queue)
+    q.size--
+    return value
+}
+
+func (q *CircularQueue) IsFull() bool {
+    return q.size == len(q.queue)
+}
+
+func (q *CircularQueue) IsEmpty() bool {
+    return q.size == 0
+}
+
+
 func Listen() {
 	l, err := net.Listen("tcp", os.Getenv("COORDADRESS"))
 
